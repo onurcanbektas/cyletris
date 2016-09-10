@@ -3,6 +3,7 @@ module Board where
 import Global
 import Pieces
 import Data.Colour
+import Data.Colour.Names (black)
 import Data.Array
 
 {- A board is simply a two dimensional array of colors.
@@ -34,4 +35,19 @@ place p@(_, (c, _)) b =
 
 -- Clears the completed lines.
 clear :: Board -> Board
-clear b = undefined
+clear =
+  fromRows . extend . filter nonEmpty . getRows
+  where getRows b =
+          [getRow i b | i <- [0..height - 1]]
+        getRow i b =
+          [ b ! (i, j) | j <- [0..width - 1]]
+        nonEmpty =
+          any (/= black)
+        extend xss =
+          xss ++ replicate (height - length xss) blackRow
+        blackRow =
+          replicate width black
+        fromRows rs =
+          array ((0, 0), (width - 1, height - 1))
+                [((i, j), c) | (r, i) <- zip rs [0..], (c, j) <- zip r [0..]]
+                                                      

@@ -37,16 +37,33 @@ moveD = shiftBy (0,-1)
    all the abstract pieces. -}
 
 allPieces :: [AbstractPiece]
-allPieces = [stickPiece]
+allPieces = [pieceI, pieceO, pieceL, pieceJ, pieceS, pieceZ, pieceT]
 
-stickPiece :: AbstractPiece
-stickPiece = (blue, cycle vss) where
+pieceI :: AbstractPiece
+pieceI = (blue, cycle vss) where
   vss = [[(3,0), (4,0), (5,0), (6,0)],
          [(6,-1), (6,0), (6,1), (6,2)]]
 
-squarePiece :: AbstractPiece
-squarePiece = (red, cycle vss) where
+pieceO :: AbstractPiece
+pieceO = (red, cycle vss) where
   vss = [[(5,-1), (6,-1), (5,0), (6,0)]]
 
+pieceL :: AbstractPiece
+pieceL = undefined
+
+pieceJ :: AbstractPiece
+pieceJ = undefined
+
+pieceS :: AbstractPiece
+pieceS = undefined
+
+pieceS :: AbstractPiece
+pieceS = undefined
+
+pieceZ :: AbstractPiece
+pieceZ = undefined
+
+pieceT :: AbstractPiece
+pieceT = undefined
 
 
