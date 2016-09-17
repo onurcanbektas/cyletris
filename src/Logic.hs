@@ -1,5 +1,8 @@
 module Logic where
 
+import Data.IORef
+import System.Random
+
 import Global
 import Pieces
 import Board
@@ -7,6 +10,7 @@ import Board
 {- There are three modes of the game: Playing,
    paused and finished. -} 
 data Mode = Paused | Finished | Playing
+  deriving (Eq)
 
 {- These are the possible events. Designed as a separate
    abstraction to make the code more portable. Move request
@@ -20,41 +24,49 @@ data Event = MoveReq (Piece -> Piece) | PauseReq | Tick
    or current piece and the next piece. -}
 type GameState = (Mode, Board, Piece, AbstractPiece)
 
-{- This is the heart of the game. The piece input is the
-   next piece. One could also omit that input and produce a
-   piece randomly but this would put the output in the IO
-   monad and testing would be more difficult. -} 
-act :: Event -> AbstractPiece -> GameState -> GameState
-act e p st = case st of
-  -- If the game is paused one can only unpause it.
-  (Paused, b, cp, np) ->
-    case e of
-      PauseReq ->
-        (Playing, b, cp, np)
-      _ ->
-        st
+-- This is a utility function which genertaes a random piece.
+pick :: IO AbstractPiece
+pick =
+  do i <- randomRIO (0, length allPieces - 1)
+     return $ allPieces !! i
 
-  -- If the game is finished then one can only restart it.
-  (Finished, b, cp, np) ->
-    case e of
-      PauseReq ->
-        (Playing, emptyBoard, (iRef, np), p)
-      _ ->
-        st
+-- Initializes the game with the randomly picked current and next pieces.
+initializeState :: IO GameState
+initializeState =
+  do p1 <- pick
+     p2 <- pick
+     return (Playing, emptyBoard, (iRef, p1), p2) 
 
-  (Playing, b, cp, np) ->
-    case e of
-      PauseReq ->
-        (Paused, b, cp, np)
-      MoveReq f ->
-        let cp' = f cp in
-          if cp' `fits` b
-             then (Playing, b, f cp', np)
-             else st
-      Tick ->
-        let cp' = moveD cp in
-          if cp' `fits` b
-             then (Playing, b, cp', np)
-             else (Playing, place cp' b, (iRef, np), p) 
+{- This is the heart of the game. -} 
+act :: Event -> IORef GameState -> IO ()
+act e sR =
+  do st <- readIORef sR
+     case (st, e) of
+       ((Paused, b, cp, np), PauseReq) ->
+         sR `writeIORef` (Playing, b, cp, np)
+       ((Paused, _, _, _), _) ->
+         return ()
+
+       ((Finished, b, cp, np), PauseReq) ->
+         initializeState >>= (sR `writeIORef`)
+       ((Finished, _, _, _), _) ->
+         return ()
+
+       ((Playing, b, cp, np), PauseReq) ->
+         sR `writeIORef` (Paused, b, cp, np)
+       ((Playing, b, cp, np), MoveReq f) ->
+         let cp' = f cp in if cp' `fits` b
+                              then sR `writeIORef` (Playing, b, cp', np)
+                              else return ()
+       ((Playing, b, cp, np), Tick) ->
+         let cp' = moveD cp in
+             if cp' `fits` b
+                then sR `writeIORef` (Playing, b, cp', np)
+                else do let b' = clearBoard $ place cp b
+                            np' = (iRef, np)
+                        p' <- pick
+                        if np' `fits` b'
+                           then sR `writeIORef` (Playing, b', (iRef, np), p')
+                           else sR `writeIORef` (Finished, b', (iRef, np), p')
                                
       

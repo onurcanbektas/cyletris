@@ -1,7 +1,6 @@
+{-# LANGUAGE ExistentialQuantification #-}
 module Pieces where
 
-import Data.Colour
-import Data.Colour.Names
 import Global
 
 {- A piece has two components. The first component
@@ -10,7 +9,7 @@ import Global
    repeating list containing all possible orientaions
    of the piece. Each orientation is represented as
    a list of relative coordinates of its blocks. -}
-type AbstractPiece = (Colour Float, [[Vector]])
+type AbstractPiece = (GenericRGB, [[Vector]])
 type Piece = (Vector, AbstractPiece)
 
 -- Extracts the absolute coordinates of the blocks of a piece.
@@ -25,7 +24,7 @@ rotL (p, (c, vss)) = (p, (c, tail vss))
 rotR = rotL . rotL . rotL
 
 shiftBy :: Vector -> Piece -> Piece
-shiftBy v (p, (c, vss)) = (p `plus` v, (c, vss))
+shiftBy v (p, ap) = (p `plus` v, ap)
 
 -- Moving left, right and down, repectively.
 moveL, moveR, moveD :: Piece -> Piece
@@ -40,30 +39,42 @@ allPieces :: [AbstractPiece]
 allPieces = [pieceI, pieceO, pieceL, pieceJ, pieceS, pieceZ, pieceT]
 
 pieceI :: AbstractPiece
-pieceI = (blue, cycle vss) where
-  vss = [[(3,0), (4,0), (5,0), (6,0)],
-         [(6,-1), (6,0), (6,1), (6,2)]]
+pieceI = ((0, 1, 0), cycle vss) where
+  vss = [[(3, 0), (4, 0), (5, 0), (6, 0)],
+         [(6, -1), (6, 0), (6, 1), (6, 2)]]
 
 pieceO :: AbstractPiece
-pieceO = (red, cycle vss) where
+pieceO = ((1, 0, 0), cycle vss) where
   vss = [[(5,-1), (6,-1), (5,0), (6,0)]]
 
 pieceL :: AbstractPiece
-pieceL = undefined
+pieceL = ((0.5, 0.3, 0), cycle vss) where
+  vss = [[(3, 0), (4, 0), (5, 0), (3, -1)],
+         [(4, -1), (4, 0), (4, 1), (5, -1)],
+         [(3, 0), (4, 0), (5, 0), (5, 1)],
+         [(3, 1), (4, -1), (4, 0), (4, 1)]]
 
 pieceJ :: AbstractPiece
-pieceJ = undefined
-
+pieceJ = ((0, 0.5, 0.7), cycle vss) where
+  vss = [[(3, 0), (4, 0), (5, 0), (5, -1)],
+         [(4, 1), (4, 0), (4, -1), (5, 1)],
+         [(3, 0), (4, 0), (5, 0), (3, 1)],
+         [(3, -1), (4, 1), (4, 0), (4, -1)]]
+        
 pieceS :: AbstractPiece
-pieceS = undefined
-
-pieceS :: AbstractPiece
-pieceS = undefined
+pieceS = ((0.5, 1, 0.4), cycle vss) where
+  vss = [[(5, 0), (6, 0), (4, -1), (5, -1)],
+         [(4, 0), (5, 0), (4, 1), (5, -1)]]
 
 pieceZ :: AbstractPiece
-pieceZ = undefined
+pieceZ = ((0.1, 0.5, 0.9), cycle vss) where
+  vss = [[(5, 0), (6, 0), (6, -1), (7, -1)],
+         [(6, 0), (7, 0), (7, 1), (6, -1)]]
 
 pieceT :: AbstractPiece
-pieceT = undefined
-
+pieceT = ((0, 0, 1), cycle vss) where
+  vss = [[(3, 0), (4, 0), (5, 0), (4, -1)],
+         [(4, -1), (4, 0), (5, 0), (4, 1)],
+         [(3, 0), (4, 0), (5, 0), (4, 1)],
+         [(4, -1), (3, 0), (4, 0), (4, 1)]]
 
