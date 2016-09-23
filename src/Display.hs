@@ -7,6 +7,46 @@ import Global
 import Board
 import Logic
 
+{- First let us fix the rendering attributes of blocks.
+   At the moment tere is only the OpenGL color. -}
+
+type FixedAttr = RenderingAttr (Vector3 GLfloat GLfloat GLfloat)
+
+{- If the block is not going to be rendered, nothing is drawned
+   and the coordinates are changed to the next block by the local
+   function rot. If an attribute is passed, then it is used to draw
+   a block and again rot is used. -}
+drawBlock :: FixedAttr -> DisplayCallback
+drawBlock x = 
+  case x of
+    NotRendered ->
+      rot
+    Attr c ->
+      color c >> block >> color bl >> blockFrame >> rot
+    where bl = Color3 0 0 (0 :: GLfloat)
+          rot = rotate rotAngle (Vector3 0 0 tU)
+
+{- A row is drawn simply bu drawing blocks one by one
+   and using a translation to prepare the coordinates for the
+   next row.  Finally the board is drawn by drawing the rows
+   one by one.-}
+drawRow :: [ FixedAttr ] -> DisplayCallback
+drawRow cs =
+  mapM_ drawBlock cs >> translate (Vector3 0 0 (tU * r))
+
+drawBoard :: Board -> DisplayCallback
+drawBoard b = mapM_ drawRow (getRows b)
+
+{- Base is the polygonal shape at the bottom. -}
+drawBase :: DisplayCallback
+drawBase =
+  sequence_ $ replicate width baseUnit
+  where baseUnit =
+          color (Color3 1 1 (1 :: GLfloat)) >>
+          renderPrimitive LineLoop (vertices bottom) >>
+          rotate rotAngle (Vector3 0 0 tU)
+
+{- This is the display called by the GLUT loop. -}
 display :: IORef GameState -> DisplayCallback
 display sR = do
   clear [ DepthBuffer, ColorBuffer ]
@@ -20,30 +60,15 @@ display sR = do
      else drawBoard $ place p b
   swapBuffers
 
-drawBase :: DisplayCallback
-drawBase =
-  sequence_ $ replicate width baseUnit
-  where baseUnit =
-          color (Color3 1 1 (1 :: GLfloat)) >>
-          renderPrimitive LineLoop (vertices bottom) >>
-          rotate rotAngle (Vector3 0 0 tU)
+{- This basically doesn't do anything for the moment.-}
+reshape :: ReshapeCallback
+reshape size = do 
+  viewport $= (Position 0 0, size)
 
-drawBlock :: GenericRGB -> DisplayCallback
-drawBlock c@(r, g, b) =
-  do if c == invisibleBlock
-        then return ()
-        else color (Color3 r g b) >>
-             block >>
-             color (Color3 0 0 (0 :: GLfloat)) >>
-             blockFrame
-     rotate rotAngle (Vector3 0 0 tU)
 
-drawRow :: [ GenericRGB ] -> DisplayCallback
-drawRow cs =
-  mapM_ drawBlock cs >> translate (Vector3 0 0 (tU * r))
 
-drawBoard :: Board -> DisplayCallback
-drawBoard b = mapM_ drawRow (getRows b)
+
+
 
 vertices :: [(GLfloat, GLfloat, GLfloat)] -> IO ()
 vertices vs =
@@ -83,7 +108,5 @@ block =
         front = [top !! 0, top !! 1, bottom !! 1, bottom !! 0]
         back = [top !! 3, top !! 2, bottom !! 2, bottom !! 3]
         
-reshape :: ReshapeCallback
-reshape size = do 
-  viewport $= (Position 0 0, size)
+
 
